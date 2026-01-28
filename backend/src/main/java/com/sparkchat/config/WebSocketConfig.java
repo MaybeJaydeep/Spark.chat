@@ -9,14 +9,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 /**
  * WebSocket configuration for real-time messaging
  * 
- * This configuration will enable WebSocket support for the chat application,
+ * This configuration enables WebSocket support for the chat application,
  * allowing real-time bidirectional communication between clients and server.
  * 
- * TODO: Implement full WebSocket functionality
- * - Configure STOMP endpoints
- * - Set up message broker
- * - Add authentication for WebSocket connections
- * - Implement message routing
+ * Features to implement:
+ * - STOMP protocol for message routing
+ * - Authentication integration for secure connections
+ * - Message broadcasting to chat room subscribers
+ * - Private messaging support
+ * - Connection management and error handling
+ * 
+ * @author Spark.chat Team
+ * @version 1.0.0
  */
 @Configuration
 @EnableWebSocketMessageBroker
