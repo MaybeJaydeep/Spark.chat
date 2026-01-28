@@ -40,6 +40,9 @@ public class ChatController {
      */
     @GetMapping("/rooms")
     public ResponseEntity<?> getUserChatRooms(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.badRequest().body("Authentication required");
+        }
         // Implementation will be added in next iteration
         return ResponseEntity.ok("Chat rooms endpoint - Coming soon!");
     }
