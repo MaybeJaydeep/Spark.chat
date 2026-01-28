@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: spark-chat-backend
+  
+  # Database Configuration - XAMPP MySQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/sparkchat?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 
+  
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Server Configuration
+server:
+  port: 8080
+
+# JWT Configuration
+jwt:
+  secret: myVeryLongSecretKeyThatIsAtLeast256BitsLongForJWTHMACAlgorithmToWorkProperly
+  expiration: 86400000 # 24 hours
+
+# Logging
+logging:
+  level:
+    com.sparkchat: DEBUG
+    org.springframework.security: DEBUG

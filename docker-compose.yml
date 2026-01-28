@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: spark-chat-db
+    environment:
+      POSTGRES_DB: sparkchat
+      POSTGRES_USER: sparkchat
+      POSTGRES_PASSWORD: sparkchat123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - spark-chat-network
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spark-chat-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sparkchat
+      - SPRING_DATASOURCE_USERNAME=sparkchat
+      - SPRING_DATASOURCE_PASSWORD=sparkchat123
+    depends_on:
+      - postgres
+    networks:
+      - spark-chat-network
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: spark-chat-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - spark-chat-network
+
+volumes:
+  postgres_data:
+
+networks:
+  spark-chat-network:
+    driver: bridge
