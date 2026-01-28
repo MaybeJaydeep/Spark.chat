@@ -1,16 +1,18 @@
 import api from './authService';
 
 /**
- * Chat service for managing real-time messaging
+ * Chat service for managing real-time messaging operations
  * 
- * This service will handle:
+ * This service handles all chat-related functionality including:
  * - WebSocket connections for real-time messaging
- * - Chat room management
- * - Message sending and receiving
- * - File upload and media sharing
- * - Message history retrieval
+ * - Chat room management and user permissions
+ * - Message sending, receiving, and persistence
+ * - File upload and media sharing capabilities
+ * - Message history retrieval with pagination
+ * - Self-destructing message management
  * 
- * TODO: Implement full chat functionality
+ * @author Spark.chat Team
+ * @version 1.0.0
  */
 
 class ChatService {
