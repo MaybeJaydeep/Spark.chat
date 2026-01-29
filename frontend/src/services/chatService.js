@@ -1,51 +1,215 @@
 import api from './authService';
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 
 /**
  * Chat service for managing real-time messaging operations
- * 
- * This service handles all chat-related functionality including:
- * - WebSocket connections for real-time messaging
- * - Chat room management and user permissions
- * - Message sending, receiving, and persistence
- * - File upload and media sharing capabilities
- * - Message history retrieval with pagination
- * - Self-destructing message management
- * 
- * @author Spark.chat Team
- * @version 1.0.0
  */
 
 class ChatService {
   constructor() {
-    this.socket = null;
+    this.stompClient = null;
     this.isConnected = false;
     this.messageHandlers = new Set();
     this.connectionHandlers = new Set();
+    this.currentUser = null;
   }
 
   /**
-   * Initialize WebSocket connection
-   * TODO: Implement WebSocket connection with authentication
+   * Initialize WebSocket connection with authentication
    */
-  connect(token) {
-    // Implementation coming soon
-    console.log('WebSocket connection will be implemented here');
+  connect(user) {
+    // Always disconnect first to ensure clean connection
+    if (this.stompClient) {
+      this.disconnect();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.currentUser = user;
+        
+        // Create SockJS connection with unique session
+        const socket = new SockJS('http://localhost:8080/ws');
+        this.stompClient = Stomp.over(socket);
+        
+        // Disable debug to reduce console noise
+        this.stompClient.debug = () => {};
+        
+        // Configure reconnection
+        this.stompClient.reconnectDelay = 5000;
+        this.stompClient.heartbeatIncoming = 4000;
+        this.stompClient.heartbeatOutgoing = 4000;
+        
+        // Configure STOMP client
+        this.stompClient.configure({
+          connectHeaders: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          onConnect: (frame) => {
+            console.log(`WebSocket connected for user: ${user.username}`);
+            this.isConnected = true;
+            
+            // Only subscribe to user-specific messages for DM
+            this.stompClient.subscribe(`/user/${user.username}/queue/messages`, (message) => {
+              const messageData = JSON.parse(message.body);
+              this.notifyMessageHandlers(messageData);
+            });
+            
+            // Notify connection handlers
+            this.notifyConnectionHandlers(true);
+            
+            // Send join message to establish session
+            this.stompClient.publish({
+              destination: '/app/chat.addUser',
+              body: JSON.stringify({
+                sender: { username: user.username },
+                messageTypeString: 'JOIN'
+              })
+            });
+            
+            resolve();
+          },
+          
+          onDisconnect: () => {
+            console.log(`WebSocket disconnected for user: ${user.username}`);
+            this.isConnected = false;
+            this.notifyConnectionHandlers(false);
+          },
+          
+          onStompError: (frame) => {
+            console.error('STOMP error:', frame);
+            this.isConnected = false;
+            this.notifyConnectionHandlers(false);
+            reject(new Error('WebSocket connection failed'));
+          },
+          
+          onWebSocketError: (error) => {
+            console.error('WebSocket error:', error);
+            this.isConnected = false;
+            this.notifyConnectionHandlers(false);
+          }
+        });
+        
+        // Connect to WebSocket
+        this.stompClient.activate();
+        
+      } catch (error) {
+        console.error('WebSocket connection error:', error);
+        reject(error);
+      }
+    });
   }
 
   /**
    * Disconnect from WebSocket
-   * TODO: Implement proper disconnection handling
    */
   disconnect() {
-    // Implementation coming soon
-    console.log('WebSocket disconnection will be implemented here');
+    if (this.stompClient) {
+      console.log(`Disconnecting WebSocket for user: ${this.currentUser?.username}`);
+      try {
+        if (this.isConnected) {
+          this.stompClient.deactivate();
+        }
+      } catch (error) {
+        console.error('Error during disconnect:', error);
+      }
+      this.stompClient = null;
+      this.isConnected = false;
+      this.currentUser = null;
+    }
   }
 
   /**
-   * Send a message to a chat room
-   * TODO: Implement real-time message sending
+   * Send a message to the chat room
    */
-  async sendMessage(chatRoomId, content, messageType = 'TEXT') {
+  sendMessage(content, recipient, messageType = 'TEXT') {
+    if (!this.isConnected || !this.stompClient) {
+      throw new Error('Not connected to WebSocket');
+    }
+    
+    if (!this.currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    const message = {
+      sender: { 
+        username: this.currentUser.username,
+        displayName: this.currentUser.displayName 
+      },
+      recipient: recipient, // Add recipient for DM
+      content: content,
+      messageTypeString: messageType,
+      sentAt: new Date().toISOString()
+    };
+
+    this.stompClient.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify(message)
+    });
+  }
+
+  /**
+   * Send typing indicator
+   */
+  sendTypingIndicator() {
+    if (this.isConnected && this.stompClient && this.currentUser) {
+      this.stompClient.publish({
+        destination: '/app/chat.typing',
+        body: JSON.stringify({
+          username: this.currentUser.username,
+          typing: true
+        })
+      });
+    }
+  }
+
+  /**
+   * Notify message handlers of new messages
+   */
+  notifyMessageHandlers(message) {
+    this.messageHandlers.forEach(handler => {
+      try {
+        handler(message);
+      } catch (error) {
+        console.error('Error in message handler:', error);
+      }
+    });
+  }
+
+  /**
+   * Notify connection handlers of connection changes
+   */
+  notifyConnectionHandlers(isConnected) {
+    this.connectionHandlers.forEach(handler => {
+      try {
+        handler(isConnected);
+      } catch (error) {
+        console.error('Error in connection handler:', error);
+      }
+    });
+  }
+
+  /**
+   * Add message handler for real-time updates
+   */
+  onMessage(handler) {
+    this.messageHandlers.add(handler);
+    return () => this.messageHandlers.delete(handler);
+  }
+
+  /**
+   * Add connection status handler
+   */
+  onConnectionChange(handler) {
+    this.connectionHandlers.add(handler);
+    return () => this.connectionHandlers.delete(handler);
+  }
+
+  /**
+   * Send a message to a chat room via REST API
+   * TODO: Implement REST API message sending for persistence
+   */
+  async sendMessageToAPI(chatRoomId, content, messageType = 'TEXT') {
     try {
       const response = await api.post('/chat/messages', {
         chatRoomId,
@@ -120,24 +284,6 @@ class ChatService {
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to upload file');
     }
-  }
-
-  /**
-   * Add message handler for real-time updates
-   * TODO: Implement message event handling
-   */
-  onMessage(handler) {
-    this.messageHandlers.add(handler);
-    return () => this.messageHandlers.delete(handler);
-  }
-
-  /**
-   * Add connection status handler
-   * TODO: Implement connection event handling
-   */
-  onConnectionChange(handler) {
-    this.connectionHandlers.add(handler);
-    return () => this.connectionHandlers.delete(handler);
   }
 
   /**

@@ -9,8 +9,10 @@ public class MessageDto {
     private Long id;
     private String content;
     private UserDto sender;
+    private String recipient; // For DM functionality
     private Long chatRoomId;
     private Message.MessageType messageType;
+    private String messageTypeString; // For WebSocket compatibility
     private String fileUrl;
     private String fileName;
     private Long fileSize;
@@ -52,11 +54,25 @@ public class MessageDto {
     public UserDto getSender() { return sender; }
     public void setSender(UserDto sender) { this.sender = sender; }
     
+    public String getRecipient() { return recipient; }
+    public void setRecipient(String recipient) { this.recipient = recipient; }
+    
     public Long getChatRoomId() { return chatRoomId; }
     public void setChatRoomId(Long chatRoomId) { this.chatRoomId = chatRoomId; }
     
     public Message.MessageType getMessageType() { return messageType; }
     public void setMessageType(Message.MessageType messageType) { this.messageType = messageType; }
+    
+    public String getMessageTypeString() { return messageTypeString; }
+    public void setMessageTypeString(String messageTypeString) { 
+        this.messageTypeString = messageTypeString;
+        // Also set the enum if valid
+        try {
+            this.messageType = Message.MessageType.valueOf(messageTypeString);
+        } catch (IllegalArgumentException e) {
+            this.messageType = Message.MessageType.TEXT; // Default fallback
+        }
+    }
     
     public String getFileUrl() { return fileUrl; }
     public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }

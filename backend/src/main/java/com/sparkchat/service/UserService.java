@@ -105,4 +105,14 @@ public class UserService implements UserDetailsService {
         User updatedUser = userRepository.save(user);
         return UserDto.fromUser(updatedUser);
     }
+    
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElse(null);
+    }
+    
+    public List<User> getAllUsersExcept(String username) {
+        return userRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equals(username))
+                .collect(Collectors.toList());
+    }
 }
