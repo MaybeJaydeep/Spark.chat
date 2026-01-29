@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     
+    Optional<ChatRoom> findByName(String name);
+    
     @Query("SELECT cr FROM ChatRoom cr JOIN cr.members m WHERE m.id = :userId AND cr.isActive = true")
     List<ChatRoom> findByMembersContaining(@Param("userId") Long userId);
     

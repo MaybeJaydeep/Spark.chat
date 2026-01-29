@@ -19,6 +19,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     
     List<Message> findByChatRoomIdAndIsDeletedFalseOrderBySentAtAsc(Long chatRoomId);
     
+    List<Message> findByChatRoomOrderBySentAtDesc(com.sparkchat.model.ChatRoom chatRoom, Pageable pageable);
+    
+    List<Message> findByChatRoomOrderBySentAtAsc(com.sparkchat.model.ChatRoom chatRoom, Pageable pageable);
+    
     @Query("SELECT m FROM Message m WHERE m.chatRoom.id = :chatRoomId AND m.isDeleted = false " +
            "AND m.sentAt > :since ORDER BY m.sentAt ASC")
     List<Message> findRecentMessages(@Param("chatRoomId") Long chatRoomId, @Param("since") LocalDateTime since);

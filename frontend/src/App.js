@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import Chat from './components/Chat/Chat';
+import ChatRoom from './components/Chat/ChatRoom';
 import './App.css';
 
 function App() {
@@ -46,7 +46,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/chat" element={<Chat />} />
+          <Route path="/chat" element={<ChatRoom />} />
           <Route path="/" element={<Login />} />
         </Routes>
       </div>
