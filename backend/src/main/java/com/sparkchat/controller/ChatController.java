@@ -50,20 +50,54 @@ public class ChatController {
     /**
      * Get message history for a chat room
      * 
-     * @param roomId Chat room ID
+     * @param roomId Chat room ID (optional, defaults to public chat)
      * @param page Page number for pagination
      * @param size Page size
      * @param authentication Current user authentication
      * @return Paginated message history
      */
-    @GetMapping("/messages/{roomId}")
+    @GetMapping("/messages")
     public ResponseEntity<?> getMessageHistory(
-            @PathVariable Long roomId,
+            @RequestParam(required = false) Long roomId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             Authentication authentication) {
-        // Implementation will be added in next iteration
-        return ResponseEntity.ok("Message history endpoint - Coming soon!");
+        
+        try {
+            if (authentication == null) {
+                return ResponseEntity.badRequest().body("Authentication required");
+            }
+            
+            List<MessageDto> messages = chatService.getMessageHistory(roomId, page, size);
+            return ResponseEntity.ok(messages);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to get message history: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get DM history between current user and another user
+     */
+    @GetMapping("/dm/{username}")
+    public ResponseEntity<?> getDmHistory(
+            @PathVariable String username,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication authentication) {
+        
+        try {
+            if (authentication == null) {
+                return ResponseEntity.badRequest().body("Authentication required");
+            }
+            
+            String currentUsername = authentication.getName();
+            List<MessageDto> messages = chatService.getDmHistory(currentUsername, username, page, size);
+            return ResponseEntity.ok(messages);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to get DM history: " + e.getMessage());
+        }
     }
     
     /**
